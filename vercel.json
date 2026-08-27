@@ -3,8 +3,7 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/lightend.html"
+      "destination": "/lightend"
     }
   ]
 }
-
