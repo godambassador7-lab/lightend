@@ -180,15 +180,26 @@
           id: Math.random(),
           startTime: elapsed,
           x: 0.3 + Math.random() * 0.4,
-          y: -0.2,
+          y: 0.12,
           targetStreamerIndex: targetIdx,
           branches: [],
+          path: [],
           isActive: true,
           interceptionSucceeded: false,
         };
 
         const target = gameState.streamers[leader.targetStreamerIndex];
         if (target) {
+          const targetX = target.targetObject.x;
+          const targetY = target.targetObject.y;
+          const segments = 18;
+          for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            leader.path.push({
+              x: leader.x + (targetX - leader.x) * t + (i === 0 || i === segments ? 0 : (Math.random() - 0.5) * 0.055),
+              y: leader.y + (targetY - leader.y) * t,
+            });
+          }
           for (let i = 0; i < 5; i++) {
             leader.branches.push({
               startX: leader.x,
@@ -339,20 +350,20 @@
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
 
-        ctx.fillStyle = 'rgba(40, 40, 60, 0.3)';
-        for (let i = 0; i < 3; i++) {
-          ctx.fillRect(0, (height / 3) * i, width, height / 3);
-        }
-
-        ctx.strokeStyle = `rgba(150, 170, 180, ${0.1 + gameState.stormIntensity * 0.2})`;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 100 + gameState.stormIntensity * 50; i++) {
-          const x = (Math.sin(i) * width + (gameState.time * 30) % width) % width;
-          const y = ((i * 7 + gameState.time * 100) % height);
+        const cloudHeight = height * 0.22;
+        const cloudGradient = ctx.createLinearGradient(0, 0, 0, cloudHeight);
+        cloudGradient.addColorStop(0, 'rgba(18, 20, 34, 0.98)');
+        cloudGradient.addColorStop(0.65, 'rgba(38, 42, 62, 0.9)');
+        cloudGradient.addColorStop(1, 'rgba(55, 60, 82, 0)');
+        ctx.fillStyle = cloudGradient;
+        ctx.fillRect(0, 0, width, cloudHeight);
+        ctx.fillStyle = 'rgba(48, 52, 72, 0.7)';
+        for (let i = 0; i < 12; i++) {
+          const x = (i / 11) * width + Math.sin(i * 2.7) * 28;
+          const y = cloudHeight * (0.28 + (i % 3) * 0.16);
           ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x - 2, y + 8);
-          ctx.stroke();
+          ctx.ellipse(x, y, width * 0.1, cloudHeight * 0.3, 0, 0, Math.PI * 2);
+          ctx.fill();
         }
 
         ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
@@ -406,29 +417,22 @@
           const age = gameState.time - leader.startTime;
           const maxDuration = 2 / (1 + gameState.stormIntensity * 2);
           const progress = Math.min(1, age / maxDuration);
+          if (leader.path.length < 2) return;
 
-          ctx.strokeStyle = `rgba(180, 200, 255, ${1 - progress * 0.5})`;
-          ctx.lineWidth = 2 + Math.random() * 1;
+          ctx.strokeStyle = `rgba(210, 225, 255, ${1 - progress * 0.35})`;
+          ctx.lineWidth = 2.5;
           ctx.lineCap = 'round';
-
-          leader.branches.forEach((branch) => {
-            const branchProgress = Math.min(1, progress * (1 + branch.depth * 0.3));
-            if (branchProgress === 0) return;
-
-            const target = gameState.streamers[leader.targetStreamerIndex];
-            if (!target) return;
-
-            const targetY = target.targetObject.y;
-            const currentY = leader.y + branchProgress * (targetY - leader.y) * 0.8;
-
-            ctx.beginPath();
-            ctx.moveTo(branch.startX * width, branch.startY * height);
-            ctx.lineTo(
-              (branch.startX + branch.offsetX * branchProgress) * width,
-              currentY * height
-            );
-            ctx.stroke();
-          });
+          const visibleSegments = Math.max(1, Math.ceil(progress * (leader.path.length - 1)));
+          ctx.beginPath();
+          ctx.moveTo(leader.path[0].x * width, leader.path[0].y * height);
+          for (let i = 1; i <= visibleSegments; i++) {
+            const point = leader.path[Math.min(i, leader.path.length - 1)];
+            ctx.lineTo(point.x * width, point.y * height);
+          }
+          ctx.shadowColor = 'rgba(120, 170, 255, 0.9)';
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
 
           if (progress > 0.8 && !leader.interceptionSucceeded) {
             ctx.fillStyle = `rgba(200, 220, 255, ${(1 - progress) * 0.2})`;
