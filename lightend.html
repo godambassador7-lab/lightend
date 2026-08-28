@@ -179,8 +179,8 @@
         const leader = {
           id: Math.random(),
           startTime: elapsed,
-          x: 0.3 + Math.random() * 0.4,
-          y: 0.12,
+          x: 0.44 + Math.random() * 0.12,
+          y: 0.22,
           targetStreamerIndex: targetIdx,
           branches: [],
           path: [],
@@ -350,47 +350,89 @@
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
 
-        const cloudHeight = height * 0.22;
-        const cloudGradient = ctx.createLinearGradient(0, 0, 0, cloudHeight);
-        cloudGradient.addColorStop(0, 'rgba(18, 20, 34, 0.98)');
-        cloudGradient.addColorStop(0.65, 'rgba(38, 42, 62, 0.9)');
-        cloudGradient.addColorStop(1, 'rgba(55, 60, 82, 0)');
-        ctx.fillStyle = cloudGradient;
-        ctx.fillRect(0, 0, width, cloudHeight);
-        ctx.fillStyle = 'rgba(48, 52, 72, 0.7)';
-        for (let i = 0; i < 12; i++) {
-          const x = (i / 11) * width + Math.sin(i * 2.7) * 28;
-          const y = cloudHeight * (0.28 + (i % 3) * 0.16);
-          ctx.beginPath();
-          ctx.ellipse(x, y, width * 0.1, cloudHeight * 0.3, 0, 0, Math.PI * 2);
-          ctx.fill();
+        const horizon = height * 0.48;
+        ctx.fillStyle = '#263c54';
+        for (let i = 0; i < 14; i++) {
+          const buildingWidth = width / 12;
+          const buildingHeight = height * (0.08 + ((i * 17) % 9) * 0.012);
+          const x = i * buildingWidth - buildingWidth * 0.3;
+          ctx.fillRect(x, horizon - buildingHeight, buildingWidth * 0.72, buildingHeight);
+          ctx.fillStyle = 'rgba(130, 180, 205, 0.22)';
+          for (let row = 0; row < 3; row++) {
+            ctx.fillRect(x + buildingWidth * 0.15, horizon - buildingHeight + 12 + row * 18, 5, 8);
+          }
+          ctx.fillStyle = '#263c54';
         }
 
-        ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
+        const groundGradient = ctx.createLinearGradient(0, horizon, 0, height);
+        groundGradient.addColorStop(0, '#20374d');
+        groundGradient.addColorStop(1, '#0b2035');
+        ctx.fillStyle = groundGradient;
+        ctx.fillRect(0, horizon, width, height - horizon);
+
+        ctx.strokeStyle = 'rgba(92, 137, 170, 0.28)';
+        ctx.lineWidth = Math.max(24, height * 0.055);
+        ctx.beginPath();
+        ctx.moveTo(0, height * 0.78);
+        ctx.lineTo(width, height * 0.58);
+        ctx.moveTo(width * 0.1, height);
+        ctx.lineTo(width * 0.84, horizon);
+        ctx.stroke();
+
+        const cloudX = width * 0.5;
+        const cloudY = height * 0.18;
+        const cloudScale = Math.min(width, height) * 0.13;
+        ctx.shadowColor = 'rgba(100, 170, 225, 0.4)';
+        ctx.shadowBlur = 24;
+        const cloudGradient = ctx.createLinearGradient(0, cloudY - cloudScale, 0, cloudY + cloudScale * 0.55);
+        cloudGradient.addColorStop(0, '#7199bb');
+        cloudGradient.addColorStop(1, '#304e6c');
+        ctx.fillStyle = cloudGradient;
+        [[-0.9, 0.2, 0.75], [-0.45, -0.05, 0.9], [0, -0.3, 1.05], [0.48, -0.05, 0.82], [0.9, 0.2, 0.65]].forEach(([dx, dy, size]) => {
+          ctx.beginPath();
+          ctx.arc(cloudX + dx * cloudScale, cloudY + dy * cloudScale, cloudScale * size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.fillRect(cloudX - cloudScale * 1.45, cloudY, cloudScale * 2.9, cloudScale * 0.55);
+        ctx.shadowBlur = 0;
+
         gameState.strikeTargets.forEach((target) => {
           const x = target.x * width;
           const y = target.y * height;
-          if (target.type === 'tree') {
-            ctx.beginPath();
-            ctx.ellipse(x, y - 20, 15, 30, 0, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (target.type === 'pole') {
-            ctx.fillRect(x - 2, y - 40, 4, 40);
-          } else if (target.type === 'house') {
-            ctx.fillRect(x - 20, y - 20, 40, 20);
-            ctx.beginPath();
-            ctx.moveTo(x - 20, y - 20);
-            ctx.lineTo(x, y - 35);
-            ctx.lineTo(x + 20, y - 20);
-            ctx.closePath();
-            ctx.fill();
-          } else if (target.type === 'tower') {
-            ctx.fillRect(x - 3, y - 80, 6, 80);
-            for (let i = 0; i < 4; i++) {
-              ctx.fillRect(x - 15, y - 60 + i * 20, 30, 2);
+          const structureWidth = Math.max(34, Math.min(64, width * 0.09));
+          const structureHeight = target.type === 'tower' ? structureWidth * 1.35 : structureWidth * 0.82;
+          const isHub = target.type === 'tower';
+          ctx.fillStyle = isHub ? '#6989a2' : '#415e75';
+          ctx.strokeStyle = isHub ? '#9fd8f8' : '#779ab3';
+          ctx.lineWidth = 2;
+          ctx.fillRect(x - structureWidth / 2, y - structureHeight, structureWidth, structureHeight);
+          ctx.strokeRect(x - structureWidth / 2, y - structureHeight, structureWidth, structureHeight);
+          ctx.fillStyle = 'rgba(174, 217, 238, 0.7)';
+          for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 3; col++) {
+              ctx.fillRect(x - structureWidth * 0.34 + col * structureWidth * 0.27, y - structureHeight + 10 + row * 15, 5, 7);
             }
           }
+          const label = isHub ? 'MAIN POWER HUB' : target.type === 'house' ? 'CITY HALL' : target.type === 'pole' ? 'RELAY' : 'GRID NODE';
+          ctx.font = `bold ${Math.max(9, Math.min(13, width * 0.02))}px Courier New`;
+          const labelWidth = ctx.measureText(label).width + 14;
+          ctx.fillStyle = 'rgba(7, 20, 33, 0.92)';
+          ctx.fillRect(x - labelWidth / 2, y - structureHeight - 24, labelWidth, 19);
+          ctx.fillStyle = '#d8edfa';
+          ctx.textAlign = 'center';
+          ctx.fillText(label, x, y - structureHeight - 10);
         });
+
+        ctx.strokeStyle = 'rgba(105, 190, 235, 0.65)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(width * 0.5, height * 0.89, width * 0.28, height * 0.065, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(105, 190, 235, 0.28)';
+        ctx.lineWidth = 12;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(85, 180, 225, 0.08)';
+        ctx.fill();
 
         gameState.streamers.forEach((streamer) => {
           const x = streamer.targetObject.x * width;
@@ -420,7 +462,7 @@
           if (leader.path.length < 2) return;
 
           ctx.strokeStyle = `rgba(210, 225, 255, ${1 - progress * 0.35})`;
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = Math.max(4, Math.min(8, width * 0.009));
           ctx.lineCap = 'round';
           const visibleSegments = Math.max(1, Math.ceil(progress * (leader.path.length - 1)));
           ctx.beginPath();
@@ -430,7 +472,7 @@
             ctx.lineTo(point.x * width, point.y * height);
           }
           ctx.shadowColor = 'rgba(120, 170, 255, 0.9)';
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 22;
           ctx.stroke();
           ctx.shadowBlur = 0;
 
@@ -443,9 +485,11 @@
         if (gameState.interceptionActive) {
           const age = gameState.time - gameState.interceptionStartTime;
           const maxDuration = 0.5;
-          const radius = 40 * (1 - age / maxDuration);
-          ctx.strokeStyle = `rgba(100, 200, 255, ${1 - age / maxDuration})`;
-          ctx.lineWidth = 3;
+          const radius = 56 * (1 - age / maxDuration);
+          ctx.strokeStyle = `rgba(255, 211, 91, ${1 - age / maxDuration})`;
+          ctx.shadowColor = '#ffd35b';
+          ctx.shadowBlur = 20;
+          ctx.lineWidth = 5;
           ctx.beginPath();
           ctx.arc(
             gameState.interceptionPosition.x * width,
@@ -455,6 +499,7 @@
             Math.PI * 2
           );
           ctx.stroke();
+          ctx.shadowBlur = 0;
 
           if (age > maxDuration) {
             gameState.interceptionActive = false;
@@ -605,10 +650,20 @@
 
           {screen === 'game' && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '20px', boxSizing: 'border-box' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-around', color: '#6fa3ff', fontSize: '14px', fontWeight: 'bold', textShadow: '0 0 10px rgba(100, 150, 255, 0.5)' }}>
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(100, 150, 255, 0.3)' }}>SCORE {score}</div>
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(100, 150, 255, 0.3)' }}>COMBO {combo}x</div>
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '8px 12px', borderRadius: '4px', border: '1px solid rgba(100, 150, 255, 0.3)' }}>GRID {gridHealth}%</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', color: '#d8edfa', fontWeight: 'bold', textShadow: '0 2px 12px rgba(0, 0, 0, 0.8)', paddingRight: '58px' }}>
+                <div style={{ fontSize: '13px', letterSpacing: '1px', paddingTop: '8px' }}>COMBO {combo}x</div>
+                <div style={{ fontSize: 'clamp(32px, 7vw, 58px)', lineHeight: 1, letterSpacing: '2px' }}>{score.toLocaleString()}</div>
+                <div style={{ justifySelf: 'end', minWidth: '112px' }}>
+                  <div style={{ color: '#8fdcff', fontSize: '22px', letterSpacing: '3px', marginBottom: '5px' }}>
+                    <span style={{ opacity: gridHealth > 66 ? 1 : 0.2 }}>♥</span>
+                    <span style={{ opacity: gridHealth > 33 ? 1 : 0.2 }}>♥</span>
+                    <span style={{ opacity: gridHealth > 0 ? 1 : 0.2 }}>♥</span>
+                  </div>
+                  <div style={{ height: '9px', padding: '2px', border: '2px solid #7aa4c0', borderRadius: '2px', backgroundColor: '#14283a' }}>
+                    <div style={{ height: '100%', width: `${gridHealth}%`, background: gridHealth > 55 ? '#73e04f' : gridHealth > 25 ? '#ffd54d' : '#ff594d', boxShadow: '0 0 8px currentColor' }} />
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#9bc9e4', textAlign: 'center', marginTop: '4px', letterSpacing: '1px' }}>GRID POWER</div>
+                </div>
               </div>
               {gameMode === 'sixtySecond' && (
                 <div style={{ textAlign: 'center', color: '#6fa3ff', fontSize: '48px', fontWeight: 'bold', textShadow: '0 0 20px rgba(100, 150, 255, 0.6)' }}>
